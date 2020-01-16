@@ -18,34 +18,56 @@ struct ContentView: View {
     @State var rGuess: Double
     @State var gGuess: Double
     @State var bGuess: Double
+    @State var showAlert = false
+    
+    @ObservedObject var timer = TimeCounter()
     
     var body: some View {
-        VStack {
+        NavigationView {
             VStack {
-                HStack {
-                    VStack {
-                        Color(red: rTarget, green: gTarget, blue: bTarget)
-                        Text("Match this colour")
+                VStack {
+                    HStack {
+                        VStack {
+                            Color(red: rTarget, green: gTarget, blue: bTarget)
+                            self.showAlert ? Text("R: \(readableDouble(double: rGuess))  G: \(readableDouble(double: gGuess))  B: \(readableDouble(double: bGuess))") : Text("Match this colour")
+                        }
+                        // Guess colour view
+                        VStack {
+                            ZStack {
+                                Color(red: rGuess, green: gGuess, blue: bGuess)
+                                Text(String(timer.counter))
+                                    .padding(.all, 5)
+                                    .background(Color.white)
+                                    .mask(Circle())
+                                    .foregroundColor(.black)
+                            }
+                            Text("R: \(readableDouble(double: rGuess))  G: \(readableDouble(double: gGuess))  B: \(readableDouble(double: bGuess))")
+                        }
                     }
-                    VStack {
-                        Color(red: rGuess, green: gGuess, blue: bGuess)
-                        Text("R: \(readableDouble(double: rGuess))  G: \(readableDouble(double: gGuess))  B: \(readableDouble(double: bGuess))")
-                    }
+                    Button(action: {
+                        self.showAlert = true
+                        self.timer.killTimer()
+                    }) {
+                        Text("Hit me!")
+                    }.alert(isPresented: $showAlert) {
+                        Alert(title: Text("Your score"), message: Text(String(computeScore())))
+                    }.padding()
                 }
-                Button(action: /*@START_MENU_TOKEN@*/{}/*@END_MENU_TOKEN@*/) {
-                    Text("Hit me!")
-                }
+                VStack {
+                    ColorSlider(value: $rGuess, textColor: .red)
+                    ColorSlider(value: $gGuess, textColor: .green)
+                    ColorSlider(value: $bGuess, textColor: .blue)
+                }.padding(.horizontal)
             }
-            ColorSlider(value: $rGuess, textColor: .red)
-            ColorSlider(value: $gGuess, textColor: .green)
-            ColorSlider(value: $bGuess, textColor: .blue)
         }
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(rGuess: 0.2, gGuess: 0.3, bGuess: 0.7)
+        ContentView(rGuess: 0.5, gGuess: 0.5, bGuess: 0.5)
+            .previewLayout(.fixed(width: 368, height: 568))
+//            .environment(\.colorScheme, .dark)
     }
 }
 
@@ -62,9 +84,19 @@ extension ContentView {
             HStack {
                 Text("0").foregroundColor(textColor)
                 Slider(value: $value)
+                    .background(textColor)
+                    .cornerRadius(10)
                 Text("255").foregroundColor(textColor)
-            }.padding(.horizontal)
+            }
         }
+    }
+    
+    func computeScore() -> Int {
+        let rDiff = rGuess - rTarget
+        let gDiff = gGuess - gTarget
+        let bDiff = bGuess - bTarget
+        let diff = sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff)
+        return Int((1.0 - diff) * 100.0 + 0.5)
     }
     
     // Convenience method
